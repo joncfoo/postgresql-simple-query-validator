@@ -10,6 +10,11 @@ Also, swapping '?'s and actual data is a pain.
 
 **No more SQL syntax errors or incorrect column/table names in source code :)**
 
+# Requirements
+
+- [python](https://www.python.org/)
+- [stack](http://docs.haskellstack.org/en/stable/README/)
+
 # Usage
 
 `./extractSql.py src/App/Queries.hs | ./validateSql.hs postgresql://user:password@host/dbname`
