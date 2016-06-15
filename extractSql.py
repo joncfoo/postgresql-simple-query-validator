@@ -15,7 +15,7 @@ for line in fileinput.input():
 
     end_idx = line.find('|]')
     if end_idx >= 0:
-        stmt += (' ' * (end_idx+5)) + line[end_idx+2:]
+        stmt += (' ' * (end_idx+2)) + line[:end_idx]
         stmts.append(stmt)
         stmt = ''
         continue
