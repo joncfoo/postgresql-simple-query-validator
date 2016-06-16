@@ -3,6 +3,7 @@
    --resolver lts-6.2
    --install-ghc runghc
    --package bytestring
+   --package megaparsec
    --package postgresql-libpq
    --package transformers
 -}
@@ -12,28 +13,42 @@
 
 import           Data.ByteString            (ByteString)
 import qualified Data.ByteString.Char8      as B
+import           Data.Either                (lefts)
 import           Database.PostgreSQL.LibPQ
-import           System.Environment         (getArgs, getProgName)
-import           System.Exit                (exitFailure, exitSuccess)
 import           Control.Monad              (forM_, zipWithM)
 import           Control.Monad.IO.Class     (liftIO)
 import           Control.Monad.Trans.Class  (lift)
 import           Control.Monad.Trans.Except (ExceptT, runExceptT, throwE)
 import           Control.Monad.Trans.Reader (ReaderT, ask, runReaderT)
-import           Data.Either                (lefts)
+import           System.Environment         (getArgs, getProgName)
+import           System.Exit                (exitFailure, exitSuccess)
+import           Text.Megaparsec
 
 main :: IO ()
 main =
-  runExceptT (getConnectionString >>= getConnection)
-  >>= \case
-    Left  err  -> putStrLn err >> exitFailure
-    Right conn -> checkAllQueries conn
+  runExceptT (getParams >>= processParams) >>= \case
+    Left err -> putStrLn err >> exitFailure
+    Right (qs, conn) -> checkAllQueries conn qs
 
-checkAllQueries :: Connection -> IO ()
-checkAllQueries conn = do
-  stmts <- B.split '\0' <$> B.getContents
-  results <- zipWithM fn stmts [B.pack $ "stmt" ++ show x | x <- [1..]]
-  forM_ (zip stmts results) $ \case
+getParams :: ExceptT String IO (FilePath, String)
+getParams = do
+  progName <- liftIO getProgName
+  liftIO getArgs >>= \case
+    [fname, connstr] -> return (fname, connstr)
+    _ -> throwE ("Usage: " ++ progName ++ " <file.hs> <connection string, e.g. postgresql://user:pass@localhost/mydb>")
+
+processParams :: (FilePath, String) -> ExceptT String IO ([ByteString], Connection)
+processParams (fname, connstr) = do
+  queries <- liftIO $ extractSQL fname
+  conn    <- liftIO $ connectdb (B.pack connstr)
+  liftIO (status conn) >>= \case
+    ConnectionOk -> return (queries, conn)
+    _ -> throwE =<< liftIO (getError conn "Failed to establish connection")
+
+checkAllQueries :: Connection -> [ByteString] -> IO ()
+checkAllQueries conn queries = do
+  results <- zipWithM fn queries [B.pack $ "stmt" ++ show x | x <- [1..]]
+  forM_ (zip queries results) $ \case
     (stmt, Left e) -> B.putStrLn stmt >> putStrLn e
     _ -> return ()
   finish conn
@@ -42,20 +57,6 @@ checkAllQueries conn = do
     _  -> exitFailure
   where
     fn stmt stmtName = runExceptT (runReaderT (checkQuery stmt) (conn, stmtName))
-
-getConnectionString :: ExceptT String IO String
-getConnectionString = do
-  progName <- liftIO getProgName
-  liftIO getArgs >>= \case
-    [cs] -> return cs
-    _    -> throwE ("Usage: " ++ progName ++ " <connection string, e.g. postgresql://user:pass@localhost/mydb>")
-
-getConnection :: String -> ExceptT String IO Connection
-getConnection connStr = do
-  conn <- liftIO $ connectdb (B.pack connStr)
-  liftIO (status conn) >>= \case
-    ConnectionOk -> return conn
-    _ -> throwE =<< liftIO (getError conn "Failed to establish connection")
 
 getError :: Connection -> String -> IO String
 getError conn defmsg =
@@ -84,3 +85,18 @@ processResult = \case
         liftIO (resultErrorMessage r) >>= \case
           Nothing -> lift (throwE "server error")
           Just e  -> lift (throwE $ B.unpack e)
+
+extractSQL :: FilePath -> IO [ByteString]
+extractSQL fname = do
+  contents <- B.readFile fname
+  case parse (many $ try extract) fname contents of
+    Left err -> print err >> exitFailure
+    Right qs -> return $ map (swapQs . B.pack) qs
+  where
+    -- could this be cleaner?
+    sqlqq = string "[sql|" >> someTill anyChar (string "|]")
+    extract = manyTill anyChar (try.lookAhead $ string "[sql|") >> sqlqq
+    swapQs stmt =
+      let st = B.split '?' stmt in
+      let ds = [B.pack $ "$" ++ show x | x <- [1..(length st - 1)]] ++ [""] in
+      B.concat $ zipWith B.append st ds

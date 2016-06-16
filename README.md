@@ -12,12 +12,11 @@ Also, swapping '?'s and actual data is a pain.
 
 # Requirements
 
-- [python](https://www.python.org/)
 - [stack](http://docs.haskellstack.org/en/stable/README/)
 
 # Usage
 
-`./extractSql.py src/App/Queries.hs | ./validateSql.hs postgresql://user:password@host/dbname`
+`./validate.hs src/App/Queries.hs postgresql://user:password@host/dbname`
 
 Errors, if any, will be printed to stdout and the exit code will be non-zero.
 
