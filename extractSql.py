@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 # extracts SQL statements embedded in postgresql-simple's quasiquoter
 

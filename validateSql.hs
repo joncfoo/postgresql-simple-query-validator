@@ -1,6 +1,5 @@
 #!/usr/bin/env stack
 {- stack
-   --resolver lts-6.2
    --install-ghc runghc
    --package bytestring
    --package postgresql-libpq
