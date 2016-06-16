@@ -33,11 +33,12 @@ checkAllQueries :: Connection -> IO ()
 checkAllQueries conn = do
   stmts <- B.split '\0' <$> B.getContents
   results <- zipWithM fn stmts [B.pack $ "stmt" ++ show x | x <- [1..]]
-  forM_ (zip stmts results) $ \case
+  let cleanResults = filter ((/=) (Left "ignore")) results
+  forM_ (zip stmts cleanResults) $ \case
     (stmt, Left e) -> B.putStrLn stmt >> putStrLn e
     _ -> return ()
   finish conn
-  case lefts results of
+  case lefts cleanResults of
     [] -> exitSuccess
     _  -> exitFailure
   where
@@ -83,4 +84,7 @@ processResult = \case
       _ ->
         liftIO (resultErrorMessage r) >>= \case
           Nothing -> lift (throwE "server error")
-          Just e  -> lift (throwE $ B.unpack e)
+          Just e  -> if "multiple commands into a prepared statement" `B.isInfixOf` e then
+                         lift (throwE "ignore")
+                     else
+                         lift (throwE $ B.unpack e)
