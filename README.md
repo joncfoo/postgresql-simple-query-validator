@@ -16,7 +16,7 @@ Also, swapping '?'s and actual data is a pain.
 
 # Usage
 
-`./validate.hs src/App/Queries.hs postgresql://user:password@host/dbname`
+`./validateSql.hs src/App/Queries.hs postgresql://user:password@host/dbname`
 
 Errors, if any, will be printed to stdout and the exit code will be non-zero.
 
