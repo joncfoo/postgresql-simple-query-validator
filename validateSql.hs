@@ -6,9 +6,10 @@
    --package postgresql-libpq
    --package transformers
 -}
-
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE OverloadedStrings #-}
+
+module Main where
 
 import           Control.Monad              (forM_, zipWithM)
 import           Control.Monad.IO.Class     (liftIO)
@@ -20,7 +21,8 @@ import qualified Data.ByteString.Char8      as B
 import           Data.Either                (lefts)
 import           Database.PostgreSQL.LibPQ  hiding (fname)
 import           System.Environment         (getArgs, getProgName)
-import           System.Exit                (exitFailure, exitSuccess)
+import           System.Exit                (ExitCode (..), exitFailure,
+                                             exitSuccess, exitWith)
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
 
@@ -28,7 +30,7 @@ import           Text.Megaparsec.Char
 main :: IO ()
 main =
   runExceptT (getParams >>= processParams) >>= \case
-    Left err -> putStrLn err >> exitFailure
+    Left err -> putStrLn err >> exitWith (ExitFailure 255)
     Right (qs, conn) -> checkAllQueries conn qs
 
 getParams :: ExceptT String IO (FilePath, String)
