@@ -1,0 +1,25 @@
+name:                postgresql-simple-query-validator
+version:             0.1.0.0
+github:              "assertible/assertible"
+author:              "Jonathan Curran"
+maintainer:          "jonathan@curran.in"
+copyright:           "Copyright (c) 2016, Jonathan Curran <jonathan@curran.in>"
+
+executables:
+  postgresql-simple-query-validator:
+    main: validateSql.hs
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+      - -Wall
+      - -fno-warn-unused-do-bind
+      - -fwarn-incomplete-uni-patterns
+      - -fwarn-incomplete-record-updates
+    dependencies:
+      - base
+      - bytestring
+      - transformers
+      - megaparsec
+      - parser-combinators
+      - postgresql-libpq
