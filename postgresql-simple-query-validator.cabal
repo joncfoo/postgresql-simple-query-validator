@@ -1,0 +1,34 @@
+-- This file has been generated from package.yaml by hpack version 0.28.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: a5ce8b228e275e948784079c5272e0cc3b774e143ce6f4a6ea72a65bcd121f47
+
+name:           postgresql-simple-query-validator
+version:        0.1.0.0
+homepage:       https://github.com/assertible/assertible#readme
+bug-reports:    https://github.com/assertible/assertible/issues
+author:         Jonathan Curran
+maintainer:     jonathan@curran.in
+copyright:      Copyright (c) 2016, Jonathan Curran <jonathan@curran.in>
+license-file:   LICENSE
+build-type:     Simple
+cabal-version:  >= 1.10
+
+source-repository head
+  type: git
+  location: https://github.com/assertible/assertible
+
+executable postgresql-simple-query-validator
+  main-is: validateSql.hs
+  other-modules:
+      Paths_postgresql_simple_query_validator
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -fno-warn-unused-do-bind -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates
+  build-depends:
+      base
+    , bytestring
+    , megaparsec
+    , parser-combinators
+    , postgresql-libpq
+    , transformers
+  default-language: Haskell2010
